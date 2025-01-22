@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y ca-certificates && \
 # Set up working directory
 WORKDIR /app
 
+COPY --from=builder /out/share/drasl /usr/share/drasl
+
 # Copy artifacts from the builder stage
 COPY --from=builder /app/drasl /app
 
