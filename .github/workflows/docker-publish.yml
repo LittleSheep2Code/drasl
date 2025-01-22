@@ -19,8 +19,12 @@ jobs:
             extra-platforms = aarch64-linux
 
       - run: |
-          DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update -q -y && sudo apt-get install -q -y qemu-system-aarch64 qemu-efi binfmt-support qemu-user-static
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y software-properties-common
+          sudo add-apt-repository universe
+          sudo apt-get update -q -y
+          # Installing architecture-specific EFI package
+          sudo apt-get install -q -y qemu-system-aarch64 qemu-efi-aarch64 binfmt-support qemu-user-static
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
