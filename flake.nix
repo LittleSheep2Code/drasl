@@ -76,9 +76,9 @@
     in rec {
       drasl = buildDrasl nixpkgsFor.${system};
 
-      drasl-cross-x86_64-linux = buildDrasl nixpkgsCross.${system}.x86_64-linux;
+      draslcross-x86_64-linux = buildDrasl nixpkgsCross.${system}.x86_64-linux;
       # drasl-cross-x86_64-darwin = buildDrasl nixpkgsCross.${system}.x86_64-darwin;
-      drasl-cross-aarch64-linux = buildDrasl nixpkgsCross.${system}.aarch64-linux;
+      draslcross-aarch64-linux = buildDrasl nixpkgsCross.${system}.aarch64-linux;
       # drasl-cross-aarch64-darwin = buildDrasl nixpkgsCross.${system}.aarch64-darwin;
 
       oci = buildOCIImage nixpkgsFor.${system};

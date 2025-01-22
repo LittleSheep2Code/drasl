@@ -54,9 +54,9 @@ docker compose pull && docker compose up -d
 
 ### Arch Linux (AUR)
 
-Drasl is available in the AUR as `drasl-git`:
+Drasl is available in the AUR as `draslgit`:
 
-1. `yay -Syu drasl-git # (or whatever AUR helper is hot right now)`
+1. `yay -Syu draslgit # (or whatever AUR helper is hot right now)`
 2. Fill out `/etc/drasl/config.toml` according to one of the examples in [doc/recipes.md](recipes.md).
 3. `sudo systemctl enable --now drasl`
 
