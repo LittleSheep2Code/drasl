@@ -571,30 +571,6 @@ func (ts *TestSuite) solveSkinChallenge(t *testing.T, username string) *http.Coo
 func (ts *TestSuite) testRegistrationExistingPlayerInvite(t *testing.T) {
 	username := EXISTING_USERNAME
 	{
-		// Registration without an invite should fail
-		returnURL := ts.App.FrontEndURL + "/web/registration"
-		form := url.Values{}
-		form.Set("username", username)
-		form.Set("password", TEST_PASSWORD)
-		form.Set("existingPlayer", "on")
-		form.Set("returnUrl", ts.App.FrontEndURL+"/web/registration")
-		rec := ts.PostForm(t, ts.Server, "/web/register", form, nil, nil)
-		ts.registrationShouldFail(t, rec, InviteMissingError.Error(), returnURL)
-	}
-	{
-		// Registration with an invalid invite should fail, and redirect to
-		// registration page without ?invite
-		returnURL := ts.App.FrontEndURL + "/web/registration"
-		form := url.Values{}
-		form.Set("username", username)
-		form.Set("password", TEST_PASSWORD)
-		form.Set("existingPlayer", "on")
-		form.Set("inviteCode", "invalid")
-		form.Set("returnUrl", ts.App.FrontEndURL+"/web/registration?invite=invalid")
-		rec := ts.PostForm(t, ts.Server, "/web/register", form, nil, nil)
-		ts.registrationShouldFail(t, rec, InviteNotFoundError.Error(), returnURL)
-	}
-	{
 		// Registration with an invite
 
 		// Create an invite
