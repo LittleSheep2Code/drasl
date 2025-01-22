@@ -1,5 +1,8 @@
 # ![Drasl icon](doc/icon.png) Drasl
 
+> [!NOTE]
+> This is a forked version of drasl to implement single sign-on.
+
 Drasl is an alternative API server for Minecraft that handles authentication, skins, and capes.
 You can use it to host Minecraft servers that are completely independent from Mojang's infrastructure.
 It's designed to be easy to host yourself, but a "reference instance" is hosted at [https://drasl.unmojang.org](https://drasl.unmojang.org) which currently requires a Minecraft account to register.
