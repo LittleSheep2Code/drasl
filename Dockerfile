@@ -24,7 +24,7 @@ RUN mkdir -p /out/share/drasl && \
 RUN make build
 
 # Stage 2: Final stage
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Install CA certificates
 RUN apt-get update && apt-get install -y ca-certificates && \
