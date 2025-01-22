@@ -8,14 +8,21 @@
   <form action="{{ .App.FrontEndURL }}/web/login" method="post">
     <input type="text" name="username" placeholder="Username" required />
     <input
-      class="long"
-      type="password"
-      name="password"
-      placeholder="Password"
-      required
+            class="long"
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
     />
     <input type="submit" value="Log in" />
   </form>
+
+  {{ if .App.Config.SingleSignOn.Allow }}
+    <h4>Log in with <b>{{ .App.Config.SingleSignOn.Nickname }}</b></h4>
+    <form action="{{ .App.FrontEndURL }}/web/login/sso" method="post">
+      <input type="submit" value="Continue" />
+    </form>
+  {{ end }}
 
   <h3>Configuring your client</h3>
   <p>
@@ -123,8 +130,8 @@ java -Xmx1024M -Xms1024M \
   <p>
     Refer to the authlib-injector documentation on setting up a server:
     <a
-      href="https://github.com/yushijinhun/authlib-injector/blob/develop/README.en.md#deploy"
-      >https://github.com/yushijinhun/authlib-injector/blob/develop/README.en.md#deploy</a
+            href="https://github.com/yushijinhun/authlib-injector/blob/develop/README.en.md#deploy"
+    >https://github.com/yushijinhun/authlib-injector/blob/develop/README.en.md#deploy</a
     >.
   </p>
 
@@ -132,7 +139,7 @@ java -Xmx1024M -Xms1024M \
     Alternatively, you can patch your server to use a newer version of Mojang's
     authlib that supports custom API servers. See
     <a href="https://github.com/tinytengu/minecraft-authlib"
-      >https://github.com/tinytengu/minecraft-authlib</a
+    >https://github.com/tinytengu/minecraft-authlib</a
     >.
   </p>
 

@@ -334,6 +334,7 @@ func (app *App) APICreateUser() func(c echo.Context) error {
 			req.SkinURL,
 			capeReader,
 			req.CapeURL,
+			nil,
 		)
 
 		if err != nil {

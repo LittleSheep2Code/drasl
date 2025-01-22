@@ -47,6 +47,7 @@ func (app *App) CreateUser(
 	skinURL *string,
 	capeReader *io.Reader,
 	capeURL *string,
+	openID *string,
 ) (User, error) {
 	callerIsAdmin := caller != nil && caller.IsAdmin
 
@@ -102,7 +103,7 @@ func (app *App) CreateUser(
 		}
 
 		var err error
-		invite, err = getInvite(app.Config.RegistrationExistingPlayer.RequireInvite)
+		invite, err = getInvite(false)
 		if err != nil {
 			return User{}, err
 		}
@@ -132,7 +133,7 @@ func (app *App) CreateUser(
 		}
 
 		var err error
-		invite, err = getInvite(app.Config.RegistrationNewPlayer.RequireInvite)
+		invite, err = getInvite(app.Config.RegistrationNewPlayer.RequireInvite && openID == nil)
 		if err != nil {
 			return User{}, err
 		}
@@ -272,6 +273,10 @@ func (app *App) CreateUser(
 		APIToken:          apiToken,
 		CreatedAt:         time.Now(),
 		NameLastChangedAt: time.Now(),
+	}
+
+	if openID != nil {
+		user.OpenID = *openID
 	}
 
 	tx := app.DB.Begin()

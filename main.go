@@ -154,6 +154,8 @@ func (app *App) MakeServer() *echo.Echo {
 	e.POST("/web/admin/update-users", FrontUpdateUsers(app))
 	e.POST("/web/delete-user", FrontDeleteUser(app))
 	e.POST("/web/login", FrontLogin(app))
+	e.POST("/web/login/sso", FrontLoginSSO(app))
+	e.GET("/web/login/sso/callback", FrontLoginSSOCallback(app))
 	e.POST("/web/logout", FrontLogout(app))
 	e.POST("/web/register", FrontRegister(app))
 	e.POST("/web/update", FrontUpdate(app))

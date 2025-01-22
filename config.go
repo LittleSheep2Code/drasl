@@ -44,6 +44,7 @@ type transientUsersConfig struct {
 
 type registrationNewPlayerConfig struct {
 	Allow             bool
+	AllowViaSSO       bool
 	AllowChoosingUUID bool
 	RequireInvite     bool
 }
@@ -56,6 +57,14 @@ type registrationExistingPlayerConfig struct {
 	SetSkinURL              string
 	RequireSkinVerification bool
 	RequireInvite           bool
+}
+
+type singleSignOnConfig struct {
+	Allow           bool
+	Nickname        string
+	OidcProviderURL string
+	ClientID        string
+	ClientSecret    string
 }
 
 type Config struct {
@@ -83,6 +92,7 @@ type Config struct {
 	RateLimit                  rateLimitConfig
 	RegistrationExistingPlayer registrationExistingPlayerConfig
 	RegistrationNewPlayer      registrationNewPlayerConfig
+	SingleSignOn               singleSignOnConfig
 	RequestCache               ristretto.Config
 	SignPublicKeys             bool
 	SkinSizeLimit              int

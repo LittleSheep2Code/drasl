@@ -2,17 +2,23 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 	"html/template"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
+	"time"
 )
 
 /*
@@ -727,6 +733,7 @@ func FrontRegister(app *App) func(c echo.Context) error {
 			nil, // skinURL
 			nil, // capeReader,
 			nil, // capeURL,
+			nil, // openID
 		)
 		if err != nil {
 			if err == InviteNotFoundError || err == InviteMissingError {
@@ -796,6 +803,142 @@ func FrontLogin(app *App) func(c echo.Context) error {
 
 		if !bytes.Equal(passwordHash, user.PasswordHash) {
 			return NewWebError(failureURL, "Incorrect password!")
+		}
+
+		browserToken, err := RandomHex(32)
+		if err != nil {
+			return err
+		}
+
+		c.SetCookie(&http.Cookie{
+			Name:     "browserToken",
+			Value:    browserToken,
+			MaxAge:   BROWSER_TOKEN_AGE_SEC,
+			Path:     "/",
+			SameSite: http.SameSiteStrictMode,
+			HttpOnly: true,
+		})
+
+		user.BrowserToken = MakeNullString(&browserToken)
+		app.DB.Save(&user)
+
+		return c.Redirect(http.StatusSeeOther, returnURL)
+	}
+}
+
+// POST /web/login/sso
+func FrontLoginSSO(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		failureURL := getReturnURL(app, &c)
+
+		if !app.Config.SingleSignOn.Allow {
+			return NewWebError(failureURL, "Single sign-on is not enabled.")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		provider, err := oidc.NewProvider(ctx, app.Config.SingleSignOn.OidcProviderURL)
+		defer cancel()
+
+		if err != nil {
+			return NewWebError(failureURL, fmt.Sprintf("Couldn't connect to OIDC provider: %v", err))
+		}
+
+		oidcCfg := oauth2.Config{
+			ClientID:     app.Config.SingleSignOn.ClientID,
+			ClientSecret: app.Config.SingleSignOn.ClientSecret,
+			RedirectURL:  app.FrontEndURL + "/web/login/sso/callback",
+			Endpoint:     provider.Endpoint(),
+			Scopes:       []string{oidc.ScopeOpenID},
+		}
+
+		return c.Redirect(http.StatusSeeOther, oidcCfg.AuthCodeURL(uuid.NewString()))
+	}
+}
+
+// GET /web/login/sso/callback
+func FrontLoginSSOCallback(app *App) func(c echo.Context) error {
+	returnURL := Unwrap(url.JoinPath(app.FrontEndURL, "web/profile"))
+	return func(c echo.Context) error {
+		failureURL := getReturnURL(app, &c)
+
+		if !app.Config.SingleSignOn.Allow {
+			return NewWebError(failureURL, "Single sign-on is not enabled.")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		provider, err := oidc.NewProvider(ctx, app.Config.SingleSignOn.OidcProviderURL)
+		defer cancel()
+		verifier := provider.Verifier(&oidc.Config{ClientID: app.Config.SingleSignOn.ClientID})
+
+		if err != nil {
+			return NewWebError(failureURL, fmt.Sprintf("Couldn't connect to OIDC provider: %v", err))
+		}
+
+		oidcCfg := oauth2.Config{
+			ClientID:     app.Config.SingleSignOn.ClientID,
+			ClientSecret: app.Config.SingleSignOn.ClientSecret,
+			RedirectURL:  app.FrontEndURL + "/web/login/sso/callback",
+			Endpoint:     provider.Endpoint(),
+			Scopes:       []string{oidc.ScopeOpenID},
+		}
+
+		token, err := oidcCfg.Exchange(ctx, c.QueryParam("code"))
+		if err != nil {
+			return NewWebError(failureURL, fmt.Sprintf("Couldn't exchange code for token: %v", err))
+		}
+
+		rawIdToken, ok := token.Extra("id_token").(string)
+		if !ok {
+			return NewWebError(failureURL, "Couldn't get ID token from token response")
+		}
+
+		_, err = verifier.Verify(ctx, rawIdToken)
+		if err != nil {
+			return NewWebError(failureURL, fmt.Sprintf("Couldn't verify ID token: %v", err))
+		}
+
+		userInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
+		if err != nil {
+			return NewWebError(failureURL, fmt.Sprintf("Couldn't get user info: %v", err))
+		}
+
+		var user User
+		result := app.DB.First(&user, "open_id = ?", userInfo.Subject)
+		if result.Error != nil {
+			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+				if !app.Config.RegistrationNewPlayer.AllowViaSSO {
+					return NewWebError(failureURL, "User not found.")
+				}
+
+				password := strings.ReplaceAll(uuid.NewString(), "-", "")
+				fmt.Printf("Creating user with password (from single-sign-on): %s\n", password)
+
+				user, err = app.CreateUser(
+					nil, // caller
+					userInfo.Profile,
+					password,          // password
+					false,             // isAdmin
+					false,             // isLocked
+					nil,               // chosenUUID
+					false,             // existingPlayer
+					nil,               // challengeToken
+					nil,               // inviteCode
+					&userInfo.Profile, // playerName
+					nil,               // fallbackPlayer
+					nil,               // preferredLanguage,
+					nil,               // skinModel,
+					nil,               // skinReader,
+					nil,               // skinURL
+					nil,               // capeReader,
+					nil,               // capeURL,
+					&userInfo.Subject,
+				)
+				if err != nil {
+					return err
+				}
+			} else {
+				return result.Error
+			}
 		}
 
 		browserToken, err := RandomHex(32)

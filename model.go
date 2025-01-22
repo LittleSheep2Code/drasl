@@ -367,6 +367,7 @@ type User struct {
 	APIToken          string
 	SkinHash          sql.NullString `gorm:"index"`
 	SkinModel         string
+	OpenID            string
 	CapeHash          sql.NullString `gorm:"index"`
 	CreatedAt         time.Time
 	NameLastChangedAt time.Time
