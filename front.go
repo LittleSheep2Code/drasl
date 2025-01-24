@@ -7,11 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/oauth2"
-	"gorm.io/gorm"
 	"html/template"
 	"io"
 	"net/http"
@@ -19,6 +14,12 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/oauth2"
+	"gorm.io/gorm"
 )
 
 /*
@@ -840,7 +841,7 @@ func FrontLoginSSO(app *App) func(c echo.Context) error {
 		defer cancel()
 
 		if err != nil {
-			return NewWebError(failureURL, fmt.Sprintf("Couldn't connect to OIDC provider: %v", err))
+			return NewWebError(failureURL, "Couldn't connect to OIDC provider: %v", err)
 		}
 
 		oidcCfg := oauth2.Config{
@@ -871,7 +872,7 @@ func FrontLoginSSOCallback(app *App) func(c echo.Context) error {
 		verifier := provider.Verifier(&oidc.Config{ClientID: app.Config.SingleSignOn.ClientID})
 
 		if err != nil {
-			return NewWebError(failureURL, fmt.Sprintf("Couldn't connect to OIDC provider: %v", err))
+			return NewWebError(failureURL, "Couldn't connect to OIDC provider: %v", err)
 		}
 
 		oidcCfg := oauth2.Config{
@@ -884,7 +885,7 @@ func FrontLoginSSOCallback(app *App) func(c echo.Context) error {
 
 		token, err := oidcCfg.Exchange(ctx, c.QueryParam("code"))
 		if err != nil {
-			return NewWebError(failureURL, fmt.Sprintf("Couldn't exchange code for token: %v", err))
+			return NewWebError(failureURL, "Couldn't exchange code for token: %v", err)
 		}
 
 		rawIdToken, ok := token.Extra("id_token").(string)
@@ -894,12 +895,12 @@ func FrontLoginSSOCallback(app *App) func(c echo.Context) error {
 
 		_, err = verifier.Verify(ctx, rawIdToken)
 		if err != nil {
-			return NewWebError(failureURL, fmt.Sprintf("Couldn't verify ID token: %v", err))
+			return NewWebError(failureURL, "Couldn't verify ID token: %v", err)
 		}
 
 		userInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
 		if err != nil {
-			return NewWebError(failureURL, fmt.Sprintf("Couldn't get user info: %v", err))
+			return NewWebError(failureURL, "Couldn't get user info: %v", err)
 		}
 
 		var user User
@@ -913,24 +914,31 @@ func FrontLoginSSOCallback(app *App) func(c echo.Context) error {
 				password := strings.ReplaceAll(uuid.NewString(), "-", "")
 				fmt.Printf("Creating user with password (from single-sign-on): %s\n", password)
 
+				var userClaims map[string]any
+				userInfo.Claims(&userClaims)
+				name, ok := userClaims["name"].(string)
+				if !ok {
+					name = fmt.Sprintf("solaruser%s", userInfo.Subject)
+				}
+
 				user, err = app.CreateUser(
 					nil, // caller
-					userInfo.Profile,
-					password,          // password
-					false,             // isAdmin
-					false,             // isLocked
-					nil,               // chosenUUID
-					false,             // existingPlayer
-					nil,               // challengeToken
-					nil,               // inviteCode
-					&userInfo.Profile, // playerName
-					nil,               // fallbackPlayer
-					nil,               // preferredLanguage,
-					nil,               // skinModel,
-					nil,               // skinReader,
-					nil,               // skinURL
-					nil,               // capeReader,
-					nil,               // capeURL,
+					name,
+					password, // password
+					false,    // isAdmin
+					false,    // isLocked
+					nil,      // chosenUUID
+					false,    // existingPlayer
+					nil,      // challengeToken
+					nil,      // inviteCode
+					&name,    // playerName
+					nil,      // fallbackPlayer
+					nil,      // preferredLanguage,
+					nil,      // skinModel,
+					nil,      // skinReader,
+					nil,      // skinURL
+					nil,      // capeReader,
+					nil,      // capeURL,
 					&userInfo.Subject,
 				)
 				if err != nil {
